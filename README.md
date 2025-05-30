@@ -54,6 +54,14 @@ npm run build
 npm start
 ```
 
+```bash
+# Docker 이미지 빌드
+docker build -t srh4cut .
+
+# 컨테이너 실행
+docker run -p 3000:80 srh4cut
+```
+
 
 [JS]: https://img.shields.io/badge/javascript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=white
 [react]: https://img.shields.io/badge/react-61DAFB?style=for-the-badge&logo=react&logoColor=white
