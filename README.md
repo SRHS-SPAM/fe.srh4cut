@@ -1,70 +1,60 @@
-# Getting Started with Create React App
+# 스팸네컷 프론트 레포지토리
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## 🎮 사용법
 
-## Available Scripts
+1. **시작**: "시작하기" 버튼 클릭
+2. **튜토리얼**: 사용법 안내 확인
+3. **프레임 선택**: 원하는 포토프레임 선택
+4. **촬영**: 
+   - 카메라 버튼 클릭
+   - 5초 카운트다운 후 자동 촬영
+   - 총 4장 연속 촬영
+5. **결과 확인**: 완성된 포토프레임 확인 및 다운로드
 
-In the project directory, you can run:
+## 🔧 개발 정보
 
-### `npm start`
+### 사용 언어와 프레임워크
+![CSS]
+![JS]
+![react]
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+### 주요 컴포넌트
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+- **WebcamCapture**: 웹캠 제어 및 사진 촬영
+- **PhotoFrameTest**: 이미지 합성 및 프레임 처리
+- **ChooseScreen**: 프레임 선택 인터페이스
 
-### `npm test`
+### 카메라 설정
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+- **해상도**: 960x1280 (세로 모드)
+- **포맷**: JPEG
+- **외부 웹캠 우선 사용**: HDMI 연결 카메라 자동 감지
+- **권한 관리**: 자동 권한 요청 및 에러 처리
 
-### `npm run build`
+### 이미지 처리
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+- **크롭**: 자동 중앙 정렬 및 비율 조정
+- **최종 해상도**: 1920x2560
+- **품질**: 최고 품질 (1.0) JPEG
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## 🐛 문제 해결
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### 카메라가 안 켜질 때
+1. 브라우저 권한 확인 (주소창 왼쪽 🔒 아이콘)
+2. HTTPS로 실행: `HTTPS=true npm start`
+3. 다른 앱에서 카메라 사용 중인지 확인
+4. 브라우저 개발자 도구(F12) → Console에서 에러 확인
 
-### `npm run eject`
+### 빌드 관련
+```bash
+# 프로덕션 빌드
+npm run build
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+# 개발환경 실행
+npm start
+```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+[JS]: https://img.shields.io/badge/javascript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=white
+[react]: https://img.shields.io/badge/react-61DAFB?style=for-the-badge&logo=react&logoColor=white
+[CSS]: https://img.shields.io/badge/css3-1572B6?style=for-the-badge&logo=css3&logoColor=white

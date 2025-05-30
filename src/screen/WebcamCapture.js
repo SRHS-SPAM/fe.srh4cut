@@ -21,30 +21,46 @@ const WebcamCapture = ({ addPhoto, photoCount, clearPhoto }) => {
   const [selectedDeviceId, setSelectedDeviceId] = useState("");// 선택된 비디오 장치 ID
 
   // 사용 가능한 비디오 장치를 감지하는 함수
-  const getVideoDevices = useCallback(async () => {
-    try {
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const videoInputs = devices.filter(device => device.kind === "videoinput");
-      setVideoDevices(videoInputs);
-      
-      // HDMI 연결 웹캠 탐지 (일반적으로 외부 웹캠은 내장 웹캠 이후에 등록됨)
-      const externalWebcams = videoInputs.filter(device => 
-        !device.label.toLowerCase().includes("built") && 
-        !device.label.toLowerCase().includes("internal")
-      );
-      
-      // 외부 웹캠이 있으면 첫 번째 외부 웹캠을 선택, 없으면 내장 웹캠 선택
-      if (externalWebcams.length > 0) {
-        console.log("외부 웹캠 감지됨:", externalWebcams[0].label);
-        setSelectedDeviceId(externalWebcams[0].deviceId);
-      } else if (videoInputs.length > 0) {
-        console.log("내장 웹캠 사용:", videoInputs[0].label);
-        setSelectedDeviceId(videoInputs[0].deviceId);
-      }
-    } catch (error) {
-      console.error("비디오 장치 감지 오류:", error);
+ // 사용 가능한 비디오 장치를 감지하는 함수
+const getVideoDevices = useCallback(async () => {
+  try {
+    // 먼저 카메라 권한을 요청해야 함 - 이때 권한 팝업이 뜸
+    console.log("카메라 권한 요청 중...");
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    console.log("카메라 권한 승인됨");
+    
+    // 권한을 받은 후 스트림을 즉시 중지 (장치 목록만 가져오기 위함)
+    stream.getTracks().forEach(track => track.stop());
+    
+    // 이제 장치 목록을 가져올 수 있음
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const videoInputs = devices.filter(device => device.kind === "videoinput");
+    console.log("발견된 비디오 장치:", videoInputs);
+    setVideoDevices(videoInputs);
+    
+    // HDMI 연결 웹캠 탐지 (일반적으로 외부 웹캠은 내장 웹캠 이후에 등록됨)
+    const externalWebcams = videoInputs.filter(device => 
+      !device.label.toLowerCase().includes("built") && 
+      !device.label.toLowerCase().includes("internal")
+    );
+    
+    // 외부 웹캠이 있으면 첫 번째 외부 웹캠을 선택, 없으면 내장 웹캠 선택
+    if (externalWebcams.length > 0) {
+      console.log("외부 웹캠 감지됨:", externalWebcams[0].label);
+      setSelectedDeviceId(externalWebcams[0].deviceId);
+    } else if (videoInputs.length > 0) {
+      console.log("내장 웹캠 사용:", videoInputs[0].label);
+      setSelectedDeviceId(videoInputs[0].deviceId);
     }
-  }, []);
+  } catch (error) {
+    console.error("카메라 권한 거부 또는 장치 감지 오류:", error);
+    if (error.name === 'NotAllowedError') {
+      alert('카메라 접근 권한이 필요합니다. 브라우저 설정에서 카메라를 허용해주세요.');
+    } else if (error.name === 'NotFoundError') {
+      alert('카메라를 찾을 수 없습니다.');
+    }
+  }
+}, []);
 
   // 컴포넌트 마운트 시 비디오 장치 감지
   useEffect(() => {
