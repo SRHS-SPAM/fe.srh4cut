@@ -45,15 +45,38 @@ const PhotoFrameTest = ({ photos, frameType, onBack, title = "인생네컷" }) =
   const [isPreviewReady, setIsPreviewReady] = useState(false);
   const [frameLoaded, setFrameLoaded] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState(null);
+  const [uploadedPhotoUrl, setUploadedPhotoUrl] = useState(null); // 업로드된 사진 URL
   const [isUploading, setIsUploading] = useState(false);
   // 인쇄 상태 추적을 위한 ref
   const hasPrintedRef = useRef(false);
+  const hasUploadedRef = useRef(false); // 업로드 중복 방지를 위한 ref
+  const csrfTokenRef = useRef(null); // CSRF 토큰 캐시
 
   // CSRF토큰 관련
   function getCSRFToken() {
+    if (csrfTokenRef.current) {
+      return csrfTokenRef.current;
+    }
     const cookie = document.cookie.split('; ').find(row => row.startsWith('csrftoken='));
-    return cookie ? cookie.split('=')[1] : null;
+    const token = cookie ? cookie.split('=')[1] : null;
+    csrfTokenRef.current = token;
+    return token;
   }
+
+  // CSRF 토큰을 한 번만 가져오는 함수
+  const fetchCSRFToken = async () => {
+    if (csrfTokenRef.current) return csrfTokenRef.current;
+    
+    try {
+      await fetch('http://127.0.0.1:8000/api/get-csrf/', {
+        credentials: 'include',
+      });
+      return getCSRFToken();
+    } catch (error) {
+      console.error('CSRF 토큰 가져오기 실패:', error);
+      return null;
+    }
+  };
 
   useEffect(() => {
     fetch('http://127.0.0.1:8000/api/get-csrf/', {
@@ -61,10 +84,19 @@ const PhotoFrameTest = ({ photos, frameType, onBack, title = "인생네컷" }) =
     });
   }, []);
 
-  // 이미지를 서버에 업로드하고 QR 코드 URL 받기
+  // 이미지를 서버에 업로드하고 응답 처리
   const uploadImageToServer = async (imageUrl) => {
+    if (hasUploadedRef.current) {
+      console.log('이미 업로드되었습니다.');
+      return;
+    }
+
     try {
       setIsUploading(true);
+      hasUploadedRef.current = true;
+
+      // CSRF 토큰 확보
+      await fetchCSRFToken();
       
       // base64 이미지 URL을 Blob으로 변환
       const response = await fetch(imageUrl);
@@ -80,19 +112,19 @@ const PhotoFrameTest = ({ photos, frameType, onBack, title = "인생네컷" }) =
       
       formData.append('title', `${title}_${timestamp}`);
       formData.append('image', blob, fileName);
-  
+
       // API 기본 URL 결정 (개발 환경 vs 프로덕션 환경)
       const apiBaseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
         ? 'http://127.0.0.1:8000'
         : 'https://srh-photo.onrender.com';
-  
+
       console.log("현재 호스트:", window.location.hostname);
       console.log("사용할 API 기본 URL:", apiBaseUrl);
-  
+
       // 전체 API URL 구성
       const apiUrl = `${apiBaseUrl}/api/upload/`;
       console.log("최종 API URL:", apiUrl);
-  
+
       // 서버에 이미지 업로드 - CORS 문제 해결을 위한 설정
       const uploadResponse = await fetch(apiUrl, {
         method: 'POST',
@@ -104,26 +136,55 @@ const PhotoFrameTest = ({ photos, frameType, onBack, title = "인생네컷" }) =
           'X-CSRFToken': getCSRFToken(),  // ✅ CSRF 토큰 추가
         },
       });
-  
+
       // 서버 응답 확인
       if (!uploadResponse.ok) {
         const errorText = await uploadResponse.text();
         throw new Error(`서버 응답 오류(${uploadResponse.status}): ${errorText}`);
       }
-  
-      // 응답 데이터 파싱
-      const data = await uploadResponse.json();
-      console.log('업로드 성공 응답:', data);
-  
-      // QR 코드 URL 설정
-      if (data.qr_code_url) {
-        setQrCodeUrl(data.qr_code_url);
+
+      // 응답의 Content-Type 확인
+      const contentType = uploadResponse.headers.get('content-type');
+      console.log('응답 Content-Type:', contentType);
+
+      if (contentType && contentType.includes('application/json')) {
+        // JSON 응답인 경우
+        const data = await uploadResponse.json();
+        console.log('업로드 성공 응답 (JSON):', data);
+
+        // QR 코드 URL 설정
+        if (data.qr_code_url) {
+          setQrCodeUrl(data.qr_code_url);
+        }
+
+        // 업로드된 사진 URL 설정
+        if (data.image_url || data.photo_url || data.url) {
+          setUploadedPhotoUrl(data.image_url || data.photo_url || data.url);
+        }
+        
+        setIsUploading(false);
+        return data;
+      } else if (contentType && contentType.startsWith('image/')) {
+        // 이미지 응답인 경우
+        console.log('서버에서 이미지 파일을 직접 반환');
+        const imageBlob = await uploadResponse.blob();
+        const imageObjectUrl = URL.createObjectURL(imageBlob);
+        
+        // 서버에서 이미지를 직접 반환하는 경우, 이것을 QR코드로 표시
+        setQrCodeUrl(imageObjectUrl);
+        
+        setIsUploading(false);
+        return { qr_code_url: imageObjectUrl };
+      } else {
+        // 기타 응답 타입
+        const responseText = await uploadResponse.text();
+        console.log('예상하지 못한 응답 타입:', contentType, responseText);
+        throw new Error(`예상하지 못한 응답 타입: ${contentType}`);
       }
       
-      setIsUploading(false);
-      return data;
     } catch (error) {
       console.error('이미지 업로드 중 오류 발생:', error);
+      hasUploadedRef.current = false; // 실패 시 다시 시도할 수 있도록
       setIsUploading(false);
       return null;
     }
@@ -394,10 +455,10 @@ const PhotoFrameTest = ({ photos, frameType, onBack, title = "인생네컷" }) =
 
   // 컴포넌트가 마운트되면 미리 이미지 합성 및 자동 인쇄 시작
   useEffect(() => {
-    if (photos.length > 0 && frameType && !hasPrintedRef.current) {
+    if (photos.length > 0 && frameType && !hasPrintedRef.current && !hasUploadedRef.current) {
       mergeImagesWithCanvas().then(imgUrl => {
         if (imgUrl) {
-          // 합성된 이미지를 서버에 업로드하고 QR 코드 URL 받기
+          // 합성된 이미지를 서버에 업로드 (한 번만)
           uploadImageToServer(imgUrl);
           
           // 자동으로 인쇄 시작 (한 번만)
@@ -446,9 +507,11 @@ const PhotoFrameTest = ({ photos, frameType, onBack, title = "인생네컷" }) =
             ) : qrCodeUrl ? (
               <div className="qr-image">
                 <img src={qrCodeUrl} alt="QR 코드" style={{ width: "100%", height: "100%" }}/>
+                {/* 디버깅용 로그 */}
+                {console.log('QR코드 URL:', qrCodeUrl)}
               </div>
             ) : (
-              <div className="qr-placeholder">QR</div>
+              <div className="qr-placeholder">업로드 대기중...</div>
             )}
           </div>
           
